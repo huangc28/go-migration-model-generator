@@ -16,12 +16,13 @@ import (
 )
 
 const (
-	DefaultSourcePath = "db/migrations"
-	DefaultHost       = "127.0.0.1"
-	DefaultPort       = 5432
-	DefaultUsername   = "root"
-	DefaultPassword   = ""
-	DefaultDBName     = ""
+	DefaultSourcePath   = "db/migrations"
+	DefaultDestFilename = "db/schema.sql"
+	DefaultHost         = "127.0.0.1"
+	DefaultPort         = 5432
+	DefaultUsername     = "postgres"
+	DefaultPassword     = ""
+	DefaultDBName       = ""
 )
 
 var (
@@ -43,7 +44,7 @@ func init() {
 
 }
 
-func CombineMigrationSourcePath(source string) string {
+func combineProjectPath(source string) string {
 	cwd, _ := os.Getwd()
 
 	return filepath.Join(cwd, source)
@@ -75,7 +76,7 @@ func pickMigrationsByVersion(files []os.FileInfo, version int) []os.FileInfo {
 		migVer, err := strconv.Atoi(strings.Split(file.Name(), "_")[0])
 
 		if err != nil {
-			log.Printf("Failed to parse version number of %s, skipping...", file.Name())
+			log.Printf("failed to parse version number of %s, skipping...", file.Name())
 			continue
 		}
 
@@ -95,7 +96,7 @@ func appendFileContentToDestFile(files []os.FileInfo, src string, dest string) {
 	defer destFile.Close()
 
 	if err != nil {
-		log.Fatalf("Failed to open / create dest file %s", err.Error())
+		log.Fatalf("failed to open / create dest file %s", err.Error())
 	}
 
 	for _, file := range files {
@@ -150,9 +151,9 @@ func Gen(cmd *cobra.Command, args []string) error {
 	}
 
 	// ---------- read `migration up` files from migration directory ----------
-	sourceAbsolutePath := CombineMigrationSourcePath(Source)
+	sourceAbsolutePath := combineProjectPath(Source)
 
-	log.Printf("reading migration source path...  %s", sourceAbsolutePath)
+	log.Printf("reading from migration source path...  %s", sourceAbsolutePath)
 
 	files, err := ioutil.ReadDir(sourceAbsolutePath)
 
@@ -167,7 +168,7 @@ func Gen(cmd *cobra.Command, args []string) error {
 	appendFileContentToDestFile(
 		mFiles,
 		Source,
-		filepath.Join(sourceAbsolutePath, "db/schema.sql"),
+		combineProjectPath(DefaultDestFilename),
 	)
 
 	// ---------- execute sqlc generate command ----------
